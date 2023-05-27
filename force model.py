@@ -13,8 +13,8 @@ L_elm = L / num_el  # length of the elements
 place_of_damage = [0, 1]  # which element is damaged
 num_nod = num_el + 1  # number of nodes in the model
 damage_off_on = False  # setting the damage off and on
-f_pos = 2 # position of the force in local coordinate system
-mw = 50 # weight of the wheel
+f_pos = 0.125  # position of the force in local coordinate system
+mw = 50  # weight of the wheel
 mv = 5750  # weight of the train
 p = ((mw + mv) * 9.81)
 
@@ -23,14 +23,14 @@ f_vec = np.zeros(num_nod * 2)
 
 # element number where the force is on
 element_number = int(np.trunc(f_pos / L_elm))
-s = (f_pos - element_number*L_elm)/L_elm
+s = (f_pos - element_number * L_elm) / L_elm
 # shape functions
-N1 = 1 -3 * s**2 + 2*s**3
-N2 = L_elm*(s - 2*s**2 + s**3)
-N3 = 3 * s**2 - 2*s**3
-N4 = L_elm*(- s**2 + s**3)
+N1 = 1 - 3 * s ** 2 + 2 * s ** 3
+N2 = L_elm * (s - 2 * s ** 2 + s ** 3)
+N3 = 3 * s ** 2 - 2 * s ** 3
+N4 = L_elm * (- s ** 2 + s ** 3)
 N_vec = np.array([N1, N2, N3, N4])
-
+print(N_vec)
 # using shape functions
 f_vec[element_number * 2:element_number * 2 + 4] = N_vec * p
 f_vec = np.delete(f_vec, [0, -2])
@@ -41,9 +41,8 @@ gk = mstdef.global_stiffness_matrix(damage_off_on, num_el, place_of_damage, lk, 
 gk = np.delete(gk, [0, -2], 1)
 gk = np.delete(gk, [0, -2], 0)
 
-
 # solving of ku = f
-u = f_vec@np.linalg.inv(gk)
+u = f_vec @ np.linalg.inv(gk)
 
 u1 = u.reshape(num_nod - 1, 2)[:-1, 1]
 u1 = np.concatenate([[0], u1, [0]])
@@ -51,4 +50,3 @@ u1 = np.concatenate([[0], u1, [0]])
 x = np.linspace(0, L, num_nod)
 plt.plot(x, u1)
 plt.show()
-
