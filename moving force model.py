@@ -8,7 +8,7 @@ I = 2.9
 A = 1  # cross section [m^2]
 m = 2303  # self weight of the beam
 dam_var = 0.8  # how much the EI will decrease due to damage
-num_el = 50  # number of chose elements
+num_el = 60  # number of chose elements
 L_elm = L / num_el  # length of the elements
 place_of_damage = [0, 1]  # which element is damaged
 num_nod = num_el + 1  # number of nodes in the model
@@ -17,7 +17,7 @@ mw = 50 # weight of the wheel
 mv = 5750  # weight of the train
 p = ((mw + mv) * 9.81)  # force of the train
 damping_ratio = 0.025  # damping ratio for this beam
-beta, gamma = 0.25 , 0.5 # Newmark's beta method
+beta, gamma = 0.25, 0.5  # Newmark's beta method
 
 # making stiffness matrix
 lk = mstdef.local_stiffness_matrix(E, I, L_elm)
@@ -43,7 +43,7 @@ u_dot_dot = np.zeros(num_nod*2 - 2)
 #making the place vector
 t1 = 20
 t = np.linspace(0,t1, 201)
-v = 0.5
+v = L/t1
 f_pos = t*v
 dt = t[1] - t[0]
 
@@ -75,15 +75,10 @@ midu = []
 for n in range(len(t)):
     if n == 200:
         break
-    nf = int(element_number[n+1])
-    F_vec = np.zeros(num_nod*2 - 2)
-    if nf == 0:
-        F_vec[0:3] = N_matrix[n+1][1::]
-    elif nf == num_el:
-        N_last = np.delete(N_matrix[n+1], -2)
-        F_vec[-4:-1] = N_last
-    else:
-        F_vec[nf:nf+4] = N_matrix[n+1]
+    nf = int(element_number[n])
+    F_vec = np.zeros(num_nod*2)
+    F_vec[nf*2:nf*2+4] = N_matrix[n]*p
+    F_vec = np.delete(F_vec,[0,-2])
     u_n = u
     u_dot_n = u_dot
     u_dot_dot_n = u_dot_dot
@@ -95,5 +90,6 @@ for n in range(len(t)):
     u1 = np.concatenate([[0], u1, [0]])
     midu.append(u1[int(len(u1)/2)])
 
-plt.plot(range(len(midu)), midu)
+plt.plot(f_pos[:len(midu)], midu)
+plt.axhline(0)
 plt.show()
