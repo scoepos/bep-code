@@ -71,15 +71,18 @@ D = np.linalg.det(Dm)
 gm = np.delete(gm, [0, -2], 1)
 gm = np.delete(gm, [0, -2], 0)
 # making a matrix for the shape vectors
-row1N = (1/(2*L_elm))*(-3+3*(x_pos**2))
-row2N = (1/4)*(-1-2*x_pos+3*x_pos**2)
-row3N = (1/(2*L_elm))*(3-3*(x_pos**2))
-row4N = (1/4)*(-1+2*x_pos+3*x_pos**2)
-N = np.array([row1N,row2N,row3N,row4N])
+element_number = np.trunc(f_pos / L_elm)
+s = (f_pos - element_number * L_elm) / L_elm
+N1 = 1 - 3 * s ** 2 + 2 * s ** 3
+N2 = L_elm * (s - 2 * s ** 2 + s ** 3)
+N3 = 3 * s ** 2 - 2 * s ** 3
+N4 = L_elm * (- s ** 2 + s ** 3)
+N_vec = np.array([N1, N2, N3, N4])
+N_matrix = N_vec.transpose()
 # doing the iterations
 for n in range(len(f_pos)):
     el_num = int(element_number[n])
-    NC = N[::,n]
+    NC = N_matrix[n]
     NCcolumn = NC
     NCrow = NC.transpose()
     # making the k_hat matrix
