@@ -97,8 +97,9 @@ for n in range(len(f_pos)):
         N_vec = np.delete(N_vec, [0, -2])
         fc = p
         for n in range(20):
+            fc_n = fc
             F_vec = N_vec * -fc
             z, z_dot, z_dot_dot = mstdef.newmark(Mt, Ct, Kt, fc, gamma, beta, dt, z, z_dot, z_dot_dot)
             u, u_dot, u_dot_dot = mstdef.newmark(gm, gc, gk, F_vec, gamma, beta, dt, u, u_dot, u_dot_dot)
             fc = kb*(N_vec.transpose()@u - z[0])
-            print(fc, z)
+            print(fc_n - fc)
