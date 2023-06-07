@@ -60,7 +60,7 @@ def newmark(M, C, K, F, gamma, beta, dt, u , u_dot, u_dot_dot):
     a7 = gamma * dt
     K_eff = a0*M + a1*C + K
     F_eff = F + M@(a0*u + a2*u_dot + a3*u_dot_dot) + C@(a1*u + a4*u_dot + a5*u_dot_dot)
-    u_dt = np.linalg.inv(K_eff)@F_eff
+    u_dt = np.linalg.solve(K_eff ,F_eff)
     u_dt_dot_dot = a0*(u_dt-u) - u_dot*a2 - a3*u_dot_dot
     u_dt_dot = u_dot + a6* u_dot_dot + a7*u_dt_dot_dot
     return u_dt, u_dt_dot, u_dt_dot_dot

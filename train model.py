@@ -18,9 +18,9 @@ mv = 24000  # weight of the train
 p = ((mw + mv) * 9.81)  # force of the train
 damping_ratio = 0.025  # damping ratio for this beam
 beta, gamma = 0.25, 0.5  # Newmark's beta method
-kv = 1500  # spring inbetween wheel and train
-kb = 40*10**3  # bedding constant
-cv = 85
+kv = 1500*10**3  # spring inbetween wheel and train
+kb = 4*10**7  # bedding constant
+cv = 85*10**3
 Mt = np.array([[mw,0],[0,mv]])
 Kt = np.array([[kv,-kv],[-kv,kv]])
 Ct = np.array([[cv, -cv], [-cv, cv]])
@@ -65,15 +65,16 @@ N_0[0:4] = N_matrix[0]
 N_0 = np.delete(N_0, [0,-2])
 
 # setting initial conditions
-u = -N_0*p@np.linalg.inv(gk)
+u = np.linalg.inv(gk)@(-N_0*p)
 u_dot = np.zeros(num_nod*2 - 2)
 u_dot_dot = np.zeros(num_nod*2 - 2)
 z1 = N_0.transpose()@u - p/kb
-z2 = z1 - f_Mm/kv
-z = np.array([z1,z2])
-z_dot = np.zeros(2)
-z_dot_dot = np.zeros(2)
-
+#z2 = z1 - f_Mm/kv
+z = z1
+z_dot = 0
+z_dot_dot = 0
+plt.plot(u)
+plt.show()
 #making integration constants
 a0 = 1/(beta*dt**2)
 a1 = gamma/(beta*dt)
@@ -83,23 +84,31 @@ a4 = 1 - (gamma/beta)
 a5 = dt*(1-(gamma/(2*beta)))
 a6 = dt*(1-gamma)
 a7 = gamma*dt
-
+l = []
+fc = p
 # making effective matrix
-
 for n in range(len(f_pos)):
-    if f_pos[n+1] > 0.5:
+    if f_pos[n+1] > 25:
         break
     else:
         nf = int(element_number[n+1])
-        F_vec = np.zeros(num_nod * 2)
         N_vec = np.zeros(num_nod * 2)
         N_vec[nf * 2:nf * 2 + 4] = N_matrix[n+1]
         N_vec = np.delete(N_vec, [0, -2])
-        fc = p
-        for n in range(20):
+        F_vec = N_vec * -fc
+        for n in range(1):
             fc_n = fc
-            F_vec = N_vec * -fc
-            z, z_dot, z_dot_dot = mstdef.newmark(Mt, Ct, Kt, fc, gamma, beta, dt, z, z_dot, z_dot_dot)
+            z_dot_dot_n = z_dot_dot
+            z_dot_n = z_dot
+            z_dot_dot = (-p+fc)/(mw+mv)
+            z_dot = z_dot_n + (dt/2)*(z_dot_dot_n + z_dot_dot)
+            z += (dt/2)*(z_dot_n+ z_dot)
+            #z, z_dot, z_dot_dot = mstdef.newmark(Mt, Ct, Kt, F, gamma, beta, dt, z, z_dot, z_dot_dot)
             u, u_dot, u_dot_dot = mstdef.newmark(gm, gc, gk, F_vec, gamma, beta, dt, u, u_dot, u_dot_dot)
-            fc = kb*(N_vec.transpose()@u - z[0])
-            print(fc_n - fc)
+            fc = kb*(N_vec.transpose()@u - z)
+            F_vec = -N_vec * fc
+            l.append(N_vec.transpose()@u)
+
+print(l)
+plt.plot(range(len(l)) , l)
+plt.show()
