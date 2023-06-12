@@ -1,5 +1,6 @@
 import numpy as np
 import scipy as sc
+import matplotlib.pyplot as plt
 
 def local_mass_matrix(A,m,L):
     lm = ((A*m*L)/420) * \
@@ -26,7 +27,6 @@ def local_stiffness_matrix(E,I,L):
 def global_stiffness_matrix(damage_off_on, num_el, place_of_damage, lk, dam_var, num_nod):
     gk = np.zeros((2 * num_nod, 2 * num_nod))
     if damage_off_on:
-        print('damage')
         for i in range(num_el):
             if i in place_of_damage:
                 gk[2 * i:2 * i + 4, 2 * i:2 * i + 4] += lk * dam_var
@@ -64,3 +64,25 @@ def newmark(M, C, K, F, gamma, beta, dt, u , u_dot, u_dot_dot):
     u_dt_dot_dot = a0*(u_dt-u) - u_dot*a2 - a3*u_dot_dot
     u_dt_dot = u_dot + a6* u_dot_dot + a7*u_dt_dot_dot
     return u_dt, u_dt_dot, u_dt_dot_dot
+
+def makeplots_ofbeam(modes, eig_vec,num_nod, L, damage_var):
+    fig = plt.figure(figsize=(20,15))
+    ax = fig.add_subplot(111)
+    plt.xlabel('beam span', fontsize = 20)
+    plt.ylabel('displacement', fontsize=20)
+    plt.grid()
+    plt.tick_params(labelsize =20, grid_linewidth=3, grid_color= 'k')
+    x = np.linspace(0,L,num_nod)
+    for axis in 'left', 'bottom':
+        ax.spines[axis].set_linewidth(3)
+    for n in range(modes):
+        mode1 = eig_vec[:,n].reshape(num_nod - 1 ,2)[:,1]
+        mode1 = mode1[:-1]
+        u1 = np.concatenate([[0],mode1,[0]])
+        plt.plot(x, u1, label=f'mode = {n+1}', linewidth =3)
+    if damage_var:
+        plt.title('three modes of the beam with damage on the beam', fontsize=20)
+    else:
+        plt.title('three modes of the beam without damage on the beam', fontsize=20)
+    plt.legend(fontsize=20)
+    plt.savefig(f"mode {n+1}, damage on or off = {damage_var}")

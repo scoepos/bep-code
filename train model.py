@@ -4,8 +4,8 @@ import mstdef
 
 L = 30  # [m]
 E = 29.43 * 10 ** 9  # e-modulus [N/m^2]
-I = 2.9
-A = 1  # cross section [m^2]
+I = 8.72
+A = 7.94  # cross section [m^2]
 m = 36056  # self weight of the beam
 dam_var = 0.8  # how much the EI will decrease due to damage
 num_el = 60  # number of chose elements
@@ -44,10 +44,9 @@ gc = s1*gm + s2*gk
 
 
 #making the place vector
-f_pos_1 = 0.3
-t1 = 20
-t = np.linspace(0,t1, 201)
-v = L/t1
+f_pos_1 = 0.6
+t = np.linspace(0,1, 201)
+v = 30
 f_pos = t*v + f_pos_1
 dt = t[1] - t[0]
 
@@ -68,13 +67,12 @@ N_0 = np.delete(N_0, [0,-2])
 u = np.linalg.inv(gk)@(-N_0*p)
 u_dot = np.zeros(num_nod*2 - 2)
 u_dot_dot = np.zeros(num_nod*2 - 2)
-z1 = N_0.transpose()@u - p/kb
+z1 = -N_0.transpose()@u + p/kb
 #z2 = z1 - f_Mm/kv
 z = z1
 z_dot = 0
 z_dot_dot = 0
-plt.plot(u)
-plt.show()
+
 #making integration constants
 a0 = 1/(beta*dt**2)
 a1 = gamma/(beta*dt)
@@ -86,29 +84,25 @@ a6 = dt*(1-gamma)
 a7 = gamma*dt
 l = []
 fc = p
+midu = []
 # making effective matrix
 for n in range(len(f_pos)):
-    if f_pos[n+1] > 25:
+    if f_pos[n+1] > 0.8:
         break
     else:
-        nf = int(element_number[n+1])
+        nf = int(element_number[n])
         N_vec = np.zeros(num_nod * 2)
-        N_vec[nf * 2:nf * 2 + 4] = N_matrix[n+1]
+        N_vec[nf * 2:nf * 2 + 4] = N_matrix[n]
         N_vec = np.delete(N_vec, [0, -2])
         F_vec = N_vec * -fc
-        for n in range(1):
+        for n in range(100):
             fc_n = fc
-            z_dot_dot_n = z_dot_dot
-            z_dot_n = z_dot
-            z_dot_dot = (-p+fc)/(mw+mv)
-            z_dot = z_dot_n + (dt/2)*(z_dot_dot_n + z_dot_dot)
-            z += (dt/2)*(z_dot_n+ z_dot)
-            #z, z_dot, z_dot_dot = mstdef.newmark(Mt, Ct, Kt, F, gamma, beta, dt, z, z_dot, z_dot_dot)
+            F_vec = N_vec * -fc
             u, u_dot, u_dot_dot = mstdef.newmark(gm, gc, gk, F_vec, gamma, beta, dt, u, u_dot, u_dot_dot)
-            fc = kb*(N_vec.transpose()@u - z)
-            F_vec = -N_vec * fc
-            l.append(N_vec.transpose()@u)
+            z_dot_dot = (fc/(mw+mv))
+            z_dot += z_dot_dot*dt
+            z += z_dot*dt
+            fc = -(9.81*(mv+mw)) - z*kb - (u@N_vec)*kb
+            print(u)
 
-print(l)
-plt.plot(range(len(l)) , l)
-plt.show()
+
