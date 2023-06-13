@@ -62,7 +62,7 @@ z_dot_dot = np.zeros(2)
 t1 = 1
 t = np.linspace(0,t1, 2001)
 v = 30
-f_pos = t*v + 0.3
+f_pos = t*v + 0.6
 dt = t[1] - t[0]
 
 #making shape matrix
@@ -79,12 +79,19 @@ f = 0
 f_n = np.inf
 midu = []
 g = 9.81
+ulist = []
 flist = []
+nf = int(element_number[0])
+N_vec = np.zeros(num_nod * 2)
+N_vec[nf * 2:nf * 2 + 4] = N_matrix[0]
+N_vec = np.delete(N_vec, [0, -2])
+u = np.linalg.inv(gk)@(-N_vec*p)
 #starting time integration
 for n in range(len(t)):
-    if n == 1:
+    f_n = np.inf
+    if f_pos[n] == L:
         break
-    while np.abs(f - f_n) > 1:
+    while np.abs(f - f_n) > 1100:
         f_n = f
         nf = int(element_number[n])
         N_vec = np.zeros(num_nod * 2)
@@ -92,11 +99,14 @@ for n in range(len(t)):
         N_vec = np.delete(N_vec, [0, -2])
         z[1], z_dot[1], z_dot_dot[1] = u@N_vec, u_dot@N_vec, u_dot_dot@N_vec
         f = mw*(g-z_dot_dot[1]) + kv*(z[0]-z[1]) + cv*(z_dot[0]-z_dot[1]) + mv*g
-        f1 = np.array([0,f])
+        f1 = np.array([-mv*z_dot_dot[0],f])
         F_vec = -f*N_vec
         u, u_dot, u_dot_dot = mstdef.newmark(gm, gc, gk, F_vec, gamma, beta, dt, u, u_dot, u_dot_dot)
         z, z_dot, z_dot_dot = mstdef.newmark(Mt, Ct, Kt, f1, gamma, beta, dt, z, z_dot, z_dot_dot)
         flist.append(f - f_n)
-
-plt.plot(range(len(flist[5::])), flist[5::])
+    else:
+        ulist.append(u[31])
+        print(n)
+print(ulist)
+plt.plot(range(len(ulist)), ulist)
 plt.show()
