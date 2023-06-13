@@ -67,9 +67,7 @@ N_0 = np.delete(N_0, [0,-2])
 u = np.linalg.inv(gk)@(-N_0*p)
 u_dot = np.zeros(num_nod*2 - 2)
 u_dot_dot = np.zeros(num_nod*2 - 2)
-z1 = -N_0.transpose()@u + p/kb
-#z2 = z1 - f_Mm/kv
-z = z1
+z = 0
 z_dot = 0
 z_dot_dot = 0
 
@@ -94,15 +92,15 @@ for n in range(len(f_pos)):
         N_vec = np.zeros(num_nod * 2)
         N_vec[nf * 2:nf * 2 + 4] = N_matrix[n]
         N_vec = np.delete(N_vec, [0, -2])
-        F_vec = N_vec * -fc
-        for n in range(100):
+        for n in range(200):
             fc_n = fc
-            F_vec = N_vec * -fc
+            F_vec = N_vec * fc
+            F = np.array([fc, 0])
             u, u_dot, u_dot_dot = mstdef.newmark(gm, gc, gk, F_vec, gamma, beta, dt, u, u_dot, u_dot_dot)
             z_dot_dot = (fc/(mw+mv))
             z_dot += z_dot_dot*dt
             z += z_dot*dt
-            fc = -(9.81*(mv+mw)) - z*kb - (u@N_vec)*kb
-            print(u)
+            fc = -(mv+mw)*9.81 + kb*(N_vec@u - z)
+            print(fc - fc_n)
 
 
