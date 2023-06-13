@@ -12,7 +12,7 @@ num_el = 60  # number of chose elements
 L_elm = L / num_el  # length of the elements
 place_of_damage = np.linspace(25,34, 10) # which element is damaged
 num_nod = num_el + 1  # number of nodes in the model
-damage_off_on = False  # setting the damage off and on
+damage_off_on = True  # setting the damage off and on
 mw = 5000 # weight of the wheel
 mv = 24000 # weight of the train
 mt = mw
@@ -28,10 +28,7 @@ Ct = np.array([[-cv, cv], [cv, -cv]])
 
 # making stiffness matrix
 lk = mstdef.local_stiffness_matrix(E, I, L_elm)
-gk_dam = mstdef.global_stiffness_matrix(True, num_el, place_of_damage, lk, dam_var, num_nod)
-gk_dam = np.delete(gk_dam, [0, -2], 1)
-gk_dam = np.delete(gk_dam, [0, -2], 0)
-gk = mstdef.global_stiffness_matrix(False, num_el, place_of_damage, lk, dam_var, num_nod)
+gk = mstdef.global_stiffness_matrix(damage_off_on, num_el, place_of_damage, lk, dam_var, num_nod)
 gk = np.delete(gk, [0, -2], 1)
 gk = np.delete(gk, [0, -2], 0)
 
@@ -44,8 +41,7 @@ gm = np.delete(gm, [0, -2], 0)
 #making damping matrix
 s1,s2,w1,w2 = mstdef.getting_damping_coeffients(gk,gm,damping_ratio)
 gc = s1*gm + s2*gk
-s1_dam,s2_dam,w1_dam,w2_dam = mstdef.getting_damping_coeffients(gk_dam,gm,damping_ratio)
-gc_dam = s1*gm + s2*gk_dam
+
 
 # setting initial conditions
 u = np.zeros(num_nod * 2 - 2)
@@ -60,9 +56,9 @@ z_dot_dot = np.zeros(2)
 
 #making the place vector
 t1 = 1
-t = np.linspace(0,t1, 2001)
+t = np.linspace(0,t1, 20001)
 v = 30
-f_pos = t*v + 0.6
+f_pos = t*v + 0.2
 dt = t[1] - t[0]
 
 #making shape matrix
@@ -89,24 +85,30 @@ u = np.linalg.inv(gk)@(-N_vec*p)
 #starting time integration
 for n in range(len(t)):
     f_n = np.inf
-    if f_pos[n] == L:
-        break
-    while np.abs(f - f_n) > 1100:
+    nf = int(element_number[n])
+    if nf == num_el:
+        nf -= 1
+    while np.abs(f - f_n) > 100:
         f_n = f
-        nf = int(element_number[n])
         N_vec = np.zeros(num_nod * 2)
         N_vec[nf * 2:nf * 2 + 4] = N_matrix[n]
         N_vec = np.delete(N_vec, [0, -2])
         z[1], z_dot[1], z_dot_dot[1] = u@N_vec, u_dot@N_vec, u_dot_dot@N_vec
-        f = mw*(g-z_dot_dot[1]) + kv*(z[0]-z[1]) + cv*(z_dot[0]-z_dot[1]) + mv*g
-        f1 = np.array([-mv*z_dot_dot[0],f])
+        f = mw*(g-z_dot_dot[1]) + kv*(z[0]-z[1]) + cv*(z_dot[0]-z_dot[1]) + mv*(g-z_dot_dot[0])
+        f1 = np.array([0,f])
         F_vec = -f*N_vec
         u, u_dot, u_dot_dot = mstdef.newmark(gm, gc, gk, F_vec, gamma, beta, dt, u, u_dot, u_dot_dot)
         z, z_dot, z_dot_dot = mstdef.newmark(Mt, Ct, Kt, f1, gamma, beta, dt, z, z_dot, z_dot_dot)
         flist.append(f - f_n)
     else:
         ulist.append(u[31])
-        print(n)
-print(ulist)
-plt.plot(range(len(ulist)), ulist)
-plt.show()
+
+plt.figure(figsize=(10,7))
+plt.plot(t, ulist, label='with damage')
+plt.axhline(0, color='k')
+plt.title('displacement of the middle of the beam with damage')
+plt.legend()
+plt.grid()
+plt.xlabel('time')
+plt.ylabel('displacement')
+plt.savefig('mass damping model with damage')
