@@ -36,8 +36,7 @@ K_dam = np.delete(K_dam, [0,-2], 1)
 #making modes
 eig_val, eig_vec = sc.linalg.eigh(K,M)
 eig_val_dam, eig_vec_dam = sc.linalg.eigh(K_dam,M)
-
+print(eig_val[0])
 #making plots
 mstdef.makeplots_ofbeam(3, eig_vec, num_nod, L, False)
 mstdef.makeplots_ofbeam(3, eig_vec_dam, num_nod, L, True)
-print(eig_vec[0,30], eig_vec_dam[0,30])
