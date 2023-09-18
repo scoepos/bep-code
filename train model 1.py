@@ -12,6 +12,7 @@ num_el = 50  # number of chose elements
 L_elm = L / num_el  # length of the elements
 #place_of_damage = np.linspace(5,14, 10)
 place_of_damage = np.linspace(25,34, 10)  # which element is damaged
+#place_of_damage = np.linspace(40,49,10)
 num_nod = num_el + 1  # number of nodes in the model
 damage_off_on = False  # setting the damage off and on
 mw = 5750 # weight of the wheel
@@ -19,7 +20,7 @@ mv = 24000  # weight of the train
 p = mw * 9.81  # force of the train
 damping_ratio = 0.025  # damping ratio for this beam
 beta, gamma = 0.25, 0.5  # Newmark's beta method
-kv = 1595*10**3  # spring inbetween wheel and train
+kv = 1.1*10**9  # spring inbetween wheel and train
 kb = 4*10**9  # bedding constant
 cv = 85*10**3
 Mt = np.array([[mw,0],[0,mv]])
@@ -50,7 +51,7 @@ gc_dam = s1_dam*gm + s2_dam*gk_dam
 
 #making the place vector
 f_pos_1 = 0
-t = np.linspace(0,1, 2001)
+t = np.linspace(0,1, 20001)
 v = 100/3.6
 f_pos = t*v + f_pos_1
 dt = t[1] - t[0]
@@ -139,19 +140,51 @@ for time_step in range(len(f_pos)):
     zlist[0,time_step+1] = z
     zlist[1,time_step+1] = z_dot
     zlist[2,time_step+1] = z_dot_dot
-    midu.append(z-z_int)
-    print(time_step)
+    midu.append(z_dot_dot)
     t_new.append(t[time_step])
+    print(time_step)
+
+for time_step in range(len(f_pos)):
+    if f_pos[time_step] >= L:
+        break
+    else:
+        nf = int(element_number[time_step + 1])
+        if nf == num_el:
+            nf -= 1
+        N_vec = np.zeros(num_nod * 2)
+        N_vec[nf * 2:nf * 2 + 4] = N_matrix[time_step + 1]
+        N_vec = np.delete(N_vec, [0, -2])
+        # initial penetration
+        fc_dam = kv*abs(z_dam - N_vec@u_dam)
+        fc_n_dam = np.inf
+        while abs(fc_dam-fc_n_dam) > tol:
+            fc_n_dam = fc_dam
+            F_vec_dam = -1 * N_vec * fc_n_dam
+            u_dam, u_dot_dam, u_dot_dot_dam = mstdef.newmark(gm, gc_dam, gk_dam, F_vec_dam, gamma, beta, dt, udamlist[:,time_step], udamdotlist[:,time_step], udamdotdotlist[:,time_step])# do not update u, u_dot, u_dot_dot each time iteration
+            z_dot_dot_dam = ((-mw*9.81+fc_n_dam)/(mw))
+            z_dot_dam = zdamlist[1,time_step] + dt/2 * (zdamlist[2,time_step] + z_dot_dot_dam)
+            z_dam = zdamlist[0,time_step] + dt/2 * (zdamlist[1,time_step] + z_dot_dam)
+            fc_dam = kv * abs(z_dam - N_vec@u_dam)
+    udamlist[:,time_step+1] = u_dam
+    udamdotlist[:,time_step+1] = u_dot_dam
+    udamdotdotlist[:,time_step+1] = u_dot_dot_dam
+    zdamlist[0,time_step+1] = z_dam
+    zdamlist[1,time_step+1] = z_dot_dam
+    zdamlist[2,time_step+1] = z_dot_dot_dam
+    midu_dam.append(z_dot_dot_dam)
+    print(time_step)
 
 
 plt.figure()
-plt.title("mass spring model deflection")
+plt.title("mass spring model accelerations")
 plt.plot(t_new, midu, label = 'wheel mass')
-#plt.plot(t_new, midu_dam, label = 'damage = 0.6')
+plt.plot(t_new, midu_dam, label = 'damage = 0.6')
 plt.axhline(0, color = 'k')
 plt.legend()
 plt.grid()
-plt.xlabel('time')
-plt.ylabel('deflection')
-plt.savefig('mass spring model without damage mass deflection ')
-print('done')
+plt.xlabel('time [s]')
+plt.ylabel('acceleration [m/s^2)')
+plt.savefig('mass spring model accelaration damage = 0,6 middle bigger spring constant ')
+
+
+
